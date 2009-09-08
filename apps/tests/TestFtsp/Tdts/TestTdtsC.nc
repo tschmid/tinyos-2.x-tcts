@@ -29,13 +29,13 @@ module TestTdtsC
 {
     uses
     {
-        interface GlobalTime<TMilli>;
+        interface GlobalTime<T32khz>;
         interface TimeSyncInfo;
         interface Receive;
         interface AMSend;
         interface Packet;
         interface Leds;
-        interface PacketTimeStamp<TMilli,uint32_t>;
+        interface PacketTimeStamp<T32khz,uint32_t>;
         interface Boot;
         interface SplitControl as RadioControl;
 

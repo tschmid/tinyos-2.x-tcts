@@ -29,10 +29,10 @@ configuration TestTdtsAppC {
 }
 
 implementation {
-  components MainC, TimeSyncC;
+  components MainC, TimeSync32kC as TSC;
 
-  MainC.SoftwareInit -> TimeSyncC;
-  TimeSyncC.Boot -> MainC;
+  MainC.SoftwareInit -> TSC;
+  TSC.Boot -> MainC;
 
   components TestTdtsC as App;
   App.Boot -> MainC;
@@ -52,8 +52,8 @@ implementation {
 
   components LedsC;
 
-  App.GlobalTime -> TimeSyncC;
-  App.TimeSyncInfo -> TimeSyncC;
+  App.GlobalTime -> TSC;
+  App.TimeSyncInfo -> TSC;
   App.Leds -> LedsC;
 
 }
