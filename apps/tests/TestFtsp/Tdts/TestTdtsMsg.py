@@ -325,7 +325,7 @@ class TestTdtsMsg(tinyos.message.Message.Message):
     # Return the value (as a int) of the field 'skew'
     #
     def get_skew(self):
-        return self.getFloat(self.offsetBits_skew(), 32, 0)
+        return self.getFloatElement(self.offsetBits_skew(), 32, 0)
 
     #
     # Set the value of the field 'skew'

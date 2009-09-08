@@ -22,10 +22,10 @@
  * Ported to T2: 3/17/08 by Brano Kusy (branislav.kusy@gmail.com)
  */
 
-#include "TestFtsp.h"
+#include "TestTdts.h"
 #include "RadioCountToLeds.h"
 
-module TestFtspC
+module TestTdtsC
 {
     uses
     {
@@ -38,6 +38,9 @@ module TestFtspC
         interface PacketTimeStamp<TMilli,uint32_t>;
         interface Boot;
         interface SplitControl as RadioControl;
+
+        interface Timer<TMilli> as RandomTimer;
+        interface Random;
     }
 }
 
@@ -55,7 +58,7 @@ implementation
         call Leds.led0Toggle();
         if (!locked && call PacketTimeStamp.isValid(msgPtr)) {
             radio_count_msg_t* rcm = (radio_count_msg_t*)call Packet.getPayload(msgPtr, sizeof(radio_count_msg_t));
-            test_ftsp_msg_t* report = (test_ftsp_msg_t*)call Packet.getPayload(&msg, sizeof(test_ftsp_msg_t));
+            test_tdts_msg_t* report = (test_tdts_msg_t*)call Packet.getPayload(&msg, sizeof(test_tdts_msg_t));
 
             uint32_t rxTimestamp = call PacketTimeStamp.timestamp(msgPtr);
 
@@ -69,16 +72,26 @@ implementation
             report->ftsp_seq = call TimeSyncInfo.getSeqNum();
             report->ftsp_table_entries = call TimeSyncInfo.getNumEntries();
 
-            if (call AMSend.send(AM_BROADCAST_ADDR, &msg, sizeof(test_ftsp_msg_t)) == SUCCESS) {
-              locked = TRUE;
-            }
+            locked = TRUE;
+            call RandomTimer.startOneShot(call Random.rand16() % 64);
         }
 
         return msgPtr;
     }
 
+    event void RandomTimer.fired()
+    {
+        if(locked && (call AMSend.send(4000, &msg, sizeof(test_tdts_msg_t)) == SUCCESS)){
+            call Leds.led2On();
+        } else {
+            locked = FALSE;
+        }
+    }
+
+
     event void AMSend.sendDone(message_t* ptr, error_t success) {
         locked = FALSE;
+        call Leds.led2Off();
         return;
     }
 

@@ -25,7 +25,7 @@
 #ifndef TEST_FTSP_H
 #define TEST_FTSP_H
 
-typedef nx_struct test_ftsp_msg
+typedef nx_struct test_tdts_msg
 {
   nx_uint16_t    src_addr;
   nx_uint16_t    counter;
@@ -36,11 +36,11 @@ typedef nx_struct test_ftsp_msg
   nx_uint16_t    ftsp_root_addr;
   nx_uint8_t     ftsp_seq;
   nx_uint8_t     ftsp_table_entries;
-} test_ftsp_msg_t;
+} test_tdts_msg_t;
 
 enum
 {
-	AM_TEST_FTSP_MSG = 137
+	AM_TEST_TDTS_MSG = 137
 };
 
 #endif

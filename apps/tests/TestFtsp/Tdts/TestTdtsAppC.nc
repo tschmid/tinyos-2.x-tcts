@@ -22,10 +22,10 @@
  * Ported to T2: 3/17/08 by Brano Kusy (branislav.kusy@gmail.com)
  */
 
-#include "TestFtsp.h"
+#include "TestTdts.h"
 #include "RadioCountToLeds.h"
 
-configuration TestFtspAppC {
+configuration TestTdtsAppC {
 }
 
 implementation {
@@ -34,15 +34,21 @@ implementation {
   MainC.SoftwareInit -> TimeSyncC;
   TimeSyncC.Boot -> MainC;
 
-  components TestFtspC as App;
+  components TestTdtsC as App;
   App.Boot -> MainC;
 
   components ActiveMessageC;
   App.RadioControl -> ActiveMessageC;
   App.Receive -> ActiveMessageC.Receive[AM_RADIO_COUNT_MSG];
-  App.AMSend -> ActiveMessageC.AMSend[AM_TEST_FTSP_MSG];
+  App.AMSend -> ActiveMessageC.AMSend[AM_TEST_TDTS_MSG];
   App.Packet -> ActiveMessageC;
   App.PacketTimeStamp -> ActiveMessageC;
+
+  components RandomC;
+  App.Random -> RandomC;
+
+  components new TimerMilliC() as Timer0;
+  App.RandomTimer -> Timer0;
 
   components LedsC;
 

@@ -3,10 +3,10 @@
 #        return self.getFloatElement(self.offsetBits_skew(), 32, 0)
 
 
-BUILD_EXTRA_DEPS = TestTdtsMsg.py
+#BUILD_EXTRA_DEPS = TestTdtsMsg.py
 
-TestTDTSMsg.py: TestTdts.h
-	mig python -target=$(PLATFORM) $(CFLAGS) -java-classname=TestTdtsMsg TestTdts.h test_tdts_msg -o $@
+TestTdtsMsg.py: TestTdts.h
+	mig python -target=$(PLATFORM) $(CFLAGS) -python-classname=TestTdtsMsg TestTdts.h test_tdts_msg -o $@
 
 COMPONENT=TestTdtsAppC
 
@@ -15,6 +15,6 @@ PFLAGS += -DTIMESYNC_RATE=3
 
 CFLAGS += -DTOSH_DATA_LENGTH=50
 
-PFLAGS += -I$(TOSDIR)/lib/tdts -I$(TOSDIR)/../apps/RadioCountToLeds
+PFLAGS += -I$(TOSDIR)/lib/ftsp -I$(TOSDIR)/../apps/RadioCountToLeds
 
 include $(MAKERULES)
