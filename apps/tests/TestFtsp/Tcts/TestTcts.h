@@ -22,46 +22,26 @@
  * Ported to T2: 3/17/08 by Brano Kusy (branislav.kusy@gmail.com)
  */
 
-#include "TestTcts.h"
-#include "RadioCountToLeds.h"
+#ifndef TEST_FTSP_H
+#define TEST_FTSP_H
 
-configuration TestTctsAppC {
-}
+typedef nx_struct test_tdts_msg
+{
+  nx_uint16_t    src_addr;
+  nx_uint16_t    counter;
+  nx_uint32_t    local_rx_timestamp;
+  nx_uint32_t    global_rx_timestamp;
+  nx_float       skew;
+  nx_uint8_t     is_synced;
+  nx_uint16_t    ftsp_root_addr;
+  nx_uint8_t     ftsp_seq;
+  nx_uint8_t     ftsp_table_entries;
+  nx_uint16_t    temp;
+} test_tdts_msg_t;
 
-implementation {
-  components MainC, TimeSync32kC as TSC, TctsC;
+enum
+{
+	AM_TEST_TCTS_MSG = 137
+};
 
-  MainC.SoftwareInit -> TSC;
-  MainC.SoftwareInit -> TctsC;
-
-  TSC.Boot -> MainC;
-  TctsC.Boot -> MainC;
-
-  TctsC.GlobalTime -> TSC;
-  TctsC.TimeSyncInfo -> TSC;
-  TctsC.TimeSyncMode -> TSC;
-  TctsC.TimeSyncNotify -> TSC;
-
-  components TestTctsC as App;
-  App.Boot -> MainC;
-
-  components ActiveMessageC;
-  App.RadioControl -> ActiveMessageC;
-  App.Receive -> ActiveMessageC.Receive[AM_RADIO_COUNT_MSG];
-  App.AMSend -> ActiveMessageC.AMSend[AM_TEST_TCTS_MSG];
-  App.Packet -> ActiveMessageC;
-  App.PacketTimeStamp -> ActiveMessageC;
-
-  components RandomC;
-  App.Random -> RandomC;
-
-  components new TimerMilliC() as Timer0;
-  App.RandomTimer -> Timer0;
-
-  components LedsC;
-
-  App.GlobalTime -> TSC;
-  App.TimeSyncInfo -> TSC;
-  App.Leds -> LedsC;
-
-}
+#endif
