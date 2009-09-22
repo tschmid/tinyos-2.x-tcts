@@ -22,10 +22,10 @@
  * Ported to T2: 3/17/08 by Brano Kusy (branislav.kusy@gmail.com)
  */
 
-#include "TestTdts.h"
+#include "TestTcts.h"
 #include "RadioCountToLeds.h"
 
-configuration TestTdtsAppC {
+configuration TestTctsAppC {
 }
 
 implementation {
@@ -34,13 +34,13 @@ implementation {
   MainC.SoftwareInit -> TSC;
   TSC.Boot -> MainC;
 
-  components TestTdtsC as App;
+  components TestTctsC as App;
   App.Boot -> MainC;
 
   components ActiveMessageC;
   App.RadioControl -> ActiveMessageC;
   App.Receive -> ActiveMessageC.Receive[AM_RADIO_COUNT_MSG];
-  App.AMSend -> ActiveMessageC.AMSend[AM_TEST_TDTS_MSG];
+  App.AMSend -> ActiveMessageC.AMSend[AM_TEST_TCTS_MSG];
   App.Packet -> ActiveMessageC;
   App.PacketTimeStamp -> ActiveMessageC;
 

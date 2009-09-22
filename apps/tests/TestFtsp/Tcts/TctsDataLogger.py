@@ -4,7 +4,7 @@ import time
 import struct
 
 #tos stuff
-import TestTdtsMsg
+import TestTctsMsg
 from tinyos.message import *
 from tinyos.message.Message import *
 from tinyos.message.SerialPacket import *
@@ -12,11 +12,11 @@ from tinyos.packet.Serial import Serial
 
 ROOTID = 1
 
-class TdtsDataLogger:
+class TctsDataLogger:
     def __init__(self, motestring):
         self.mif = MoteIF.MoteIF()
         self.tos_source = self.mif.addSource(motestring)
-        self.mif.addListener(self, TestTdtsMsg.TestTdtsMsg)
+        self.mif.addListener(self, TestTctsMsg.TestTctsMsg)
 
         if len(sys.argv) == 3:
             self.filteraddr = int(sys.argv[2])
@@ -32,8 +32,8 @@ class TdtsDataLogger:
 skew table_entries rootid"
 
     def receive(self, src, msg):
-        if msg.get_amType() == TestTdtsMsg.AM_TYPE:
-            m = TestTdtsMsg.TestTdtsMsg(msg.dataGet())
+        if msg.get_amType() == TestTctsMsg.AM_TYPE:
+            m = TestTctsMsg.TestTctsMsg(msg.dataGet())
             addr = m.get_src_addr()
             if m.get_counter() == self.lastseq:
                 # store the data
@@ -111,7 +111,7 @@ def main():
         print "Usage:", sys.argv[0], "sf@localhost:9002"
         sys.exit()
 
-    fdl = TdtsDataLogger(sys.argv[1])
+    fdl = TctsDataLogger(sys.argv[1])
     fdl.main_loop()  # don't expect this to return...
 
 

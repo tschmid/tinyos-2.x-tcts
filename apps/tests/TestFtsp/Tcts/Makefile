@@ -1,14 +1,14 @@
-#if you want to rebuild the TestTdtsMsg.py, make sure to replace the get_skew function with the following prototype:
+#if you want to rebuild the TestTctsMsg.py, make sure to replace the get_skew function with the following prototype:
 #    def get_skew(self):
 #        return self.getFloatElement(self.offsetBits_skew(), 32, 0)
 
 
-#BUILD_EXTRA_DEPS = TestTdtsMsg.py
+#BUILD_EXTRA_DEPS = TestTctsMsg.py
 
-TestTdtsMsg.py: TestTdts.h
-	mig python -target=$(PLATFORM) $(CFLAGS) -python-classname=TestTdtsMsg TestTdts.h test_tdts_msg -o $@
+TestTctsMsg.py: TestTcts.h
+	mig python -target=$(PLATFORM) $(CFLAGS) -python-classname=TestTctsMsg TestTcts.h test_tdts_msg -o $@
 
-COMPONENT=TestTdtsAppC
+COMPONENT=TestTctsAppC
 
 PFLAGS += -DTIMESYNC_RATE=3
 #PFLAGS += -DTIMESYNC_DEBUG
