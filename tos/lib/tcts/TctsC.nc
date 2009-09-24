@@ -8,12 +8,14 @@ configuration TctsC
     {
         interface Init;
         interface StdControl;
+
+        interface GlobalTime<T32khz>;
     }
 
     uses
     {
         interface Boot;
-        interface GlobalTime<T32khz>;
+        interface GlobalTime<T32khz> as TSGlobalTime;
         interface TimeSyncInfo;
         interface TimeSyncMode;
         interface TimeSyncNotify;
@@ -29,6 +31,7 @@ implementation
     Boot           = TctsP;
     StdControl     = TctsP;
 
+    TSGlobalTime   = TctsP;
     GlobalTime     = TctsP;
     TimeSyncInfo   = TctsP;
     TimeSyncMode   = TctsP;

@@ -16,5 +16,6 @@ PFLAGS += -DTIMESYNC_RATE=3
 CFLAGS += -DTOSH_DATA_LENGTH=50
 
 PFLAGS += -I$(TOSDIR)/lib/ftsp -I$(TOSDIR)/lib/tcts -I$(TOSDIR)/../apps/RadioCountToLeds
+PFLAGS += -I$(TOSDIR)/lib/printf
 
 include $(MAKERULES)

@@ -37,7 +37,7 @@ implementation {
   TSC.Boot -> MainC;
   TctsC.Boot -> MainC;
 
-  TctsC.GlobalTime -> TSC;
+  TctsC.TSGlobalTime -> TSC;
   TctsC.TimeSyncInfo -> TSC;
   TctsC.TimeSyncMode -> TSC;
   TctsC.TimeSyncNotify -> TSC;
@@ -60,7 +60,7 @@ implementation {
 
   components LedsC;
 
-  App.GlobalTime -> TSC;
+  App.GlobalTime -> TctsC;
   App.TimeSyncInfo -> TSC;
   App.Leds -> LedsC;
 
