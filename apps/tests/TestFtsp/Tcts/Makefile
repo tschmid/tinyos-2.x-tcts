@@ -4,9 +4,16 @@
 
 
 #BUILD_EXTRA_DEPS = TestTctsMsg.py
+#BUILD_EXTRA_DEPS = TctsMsg.py
+BUILD_EXTRA_DEPS = TctsCmdMsg.py
 
 TestTctsMsg.py: TestTcts.h
-	mig python -target=$(PLATFORM) $(CFLAGS) -python-classname=TestTctsMsg TestTcts.h test_tdts_msg -o $@
+	mig python -target=$(PLATFORM) $(CFLAGS) -python-classname=TestTctsMsg TestTcts.h test_tcts_msg -o $@
+
+TctsMsg.py: $(TOSDIR)/lib/tcts/TctsMsg.h
+	mig python -target=$(PLATFORM) $(CFLAGS) -python-classname=TctsMsg $(TOSDIR)/lib/tcts/TctsMsg.h tcts_msg -o $@
+TctsCmdMsg.py: $(TOSDIR)/lib/tcts/TctsMsg.h
+	mig python -target=$(PLATFORM) $(CFLAGS) -python-classname=TctsCmdMsg $(TOSDIR)/lib/tcts/TctsMsg.h tcts_cmd_msg -o $@
 
 COMPONENT=TestTctsAppC
 

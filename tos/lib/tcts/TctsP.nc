@@ -7,6 +7,8 @@
  */
 
 #include "TimeSyncMsg.h"
+#include "StorageVolumes.h"
+#include "TctsMsg.h"
 #include "printf.h"
 
 generic module TctsP(typedef precision_tag)
@@ -23,6 +25,14 @@ generic module TctsP(typedef precision_tag)
         interface Timer<TMilli> as BeaconTimer;
 
         interface Read<uint16_t> as Temperature;
+
+        interface ConfigStorage as Config;
+        interface Mount;
+
+        interface SplitControl as RadioControl;
+        interface Receive;
+        interface AMSend;
+        interface Packet;
     }
     provides
     {
@@ -37,6 +47,9 @@ implementation
 {
 
     enum {
+        CONFIG_ADDR = 0,
+        CONFIG_VERSION = 1,
+
         CALIBRATION = 1,
         COMPENSATION = 2,
         DEFAULT_PERIOD = 10,
@@ -50,23 +63,106 @@ implementation
     uint8_t calibCounter; // counts how many calibration messages we received
     uint16_t currentPeriod; // the current beacon interval in seconds
 
-    float calTable[NUM_TEMP];
+    typedef struct config_t {
+        uint16_t version;
+        float calTable[NUM_TEMP];
+    } config_t;
+
+    config_t conf;
 
     command error_t Init.init()
     {
-        uint16_t i;
-
-        for(i=0; i<NUM_TEMP; i++)
-            calTable[i] = INVALID_TEMP;
-
         currentPeriod = DEFAULT_PERIOD;
         state = CALIBRATION;
         calibCounter = 0;
+        conf.version = 0;
         return SUCCESS;
     }
 
     event void Boot.booted()
     {
+        if (call Mount.mount() != SUCCESS) {
+            // Handle failure
+        }
+
+    }
+
+    event void Mount.mountDone(error_t error) {
+        if (error == SUCCESS) {
+            if(call Config.valid() == TRUE) {
+                if (call Config.read(CONFIG_ADDR, &conf, sizeof(conf)) != SUCCESS) {
+                    // Handle failure
+                }
+            }
+            else {
+                // Invalid volume. Commit to make valid
+                //call Leds.led1On();
+                if (call Config.commit() == SUCCESS) {
+                    call Leds.led0On();
+                }
+                else {
+                    // Handle failure
+                }
+            }
+        } else {
+            // Handle failure
+        }
+
+    }
+
+    event void Config.readDone(storage_addr_t addr, void* buf, storage_len_t len, error_t err) __attribute__((noinline)) {
+        if (err == SUCCESS) {
+            memcpy(&conf, buf, len);
+            if (conf.version == CONFIG_VERSION) {
+                // everything is ok!
+            }
+            else {
+                // version mismatch. Restore default.
+                uint16_t i;
+                conf.version = CONFIG_VERSION;
+
+                for(i=0; i<NUM_TEMP; i++)
+                    conf.calTable[i] = INVALID_TEMP; 
+            }
+            call Config.write(CONFIG_ADDR, &conf, sizeof(conf));
+        }
+        else {
+            // Handle failure
+        }
+
+    }
+
+    event void Config.writeDone(storage_addr_t addr, void*buf, storage_len_t len, error_t err) {
+        // Verify addr and len
+
+        if ( err == SUCCESS ) {
+            if (call Config.commit() != SUCCESS) {
+                // Handle failure
+            }
+        }
+        else {
+            // Handle failure
+        }
+    }
+
+    event void Config.commitDone(error_t err) {
+        if(conf.version == 0) {
+            // we didn't read a configuration!
+            // try to read it again
+            if(call Config.valid() == TRUE) {
+                if (call Config.read(CONFIG_ADDR, &conf, sizeof(conf)) != SUCCESS) {
+                    // Handle failure
+                }
+            }
+        } 
+        else {
+            call Leds.led0On();
+            call Leds.led1On();
+            call Leds.led2On();
+            call RadioControl.start();
+        }
+    }
+    event void RadioControl.startDone(error_t err) {
         call StdControl.start();
     }
 
@@ -123,7 +219,7 @@ implementation
                     float skew = call TimeSyncInfo.getSkew();
 
                     state = COMPENSATION;
-                    calTable[i] = skew;
+                    conf.calTable[i] = skew;
 
                     printf("CALIB ct: %u %ld\n", i, (int32_t)(skew*100000000));
                 }
@@ -131,7 +227,7 @@ implementation
                 break;
             case COMPENSATION:
                 printf("COMP temp: %u %u %ld\n", val, val/TEMP_BINS, (int32_t)((call TimeSyncInfo.getSkew())*100000000));
-                if(calTable[val/TEMP_BINS] == INVALID_TEMP)
+                if(conf.calTable[val/TEMP_BINS] == INVALID_TEMP)
                 {
                     // we don't know the current skew, go back to calibration!
                     state = CALIBRATION;
@@ -166,4 +262,22 @@ implementation
     {
         call Leds.led0Toggle();
     }
+
+    event message_t* Receive.receive(message_t* msgPtr, void* payload, uint8_t len)
+    {
+        tcts_cmd_msg_t* m = (tcts_cmd_msg_t*)call Packet.getPayload(msgPtr, sizeof(tcts_cmd_msg_t));
+
+        switch(m->cmd)
+        {
+            default:
+                call Leds.led0Toggle();
+        }
+        return msgPtr;
+    }
+
+    event void AMSend.sendDone(message_t* ptr, error_t success) {
+
+    }
+
+    event void RadioControl.stopDone(error_t err) {}
 }

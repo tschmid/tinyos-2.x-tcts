@@ -1,6 +1,13 @@
 /**
+ *
+ */
+
+/**
  * @author Thomas Schmid
  */
+
+#include "StorageVolumes.h"
+#include "TctsMsg.h"
 
 configuration TctsC
 {
@@ -47,6 +54,16 @@ implementation
 
     components new TimerMilliC() as TimerC;
     TctsP.BeaconTimer -> TimerC;
+
+    components new ConfigStorageC(VOLUME_CONFIGTEST);
+    TctsP.Config -> ConfigStorageC.ConfigStorage;
+    TctsP.Mount  -> ConfigStorageC.Mount;
+
+    components ActiveMessageC;
+    TctsP.RadioControl -> ActiveMessageC;
+    TctsP.Receive -> ActiveMessageC.Receive[AM_TCTS_CMD_MSG];
+    TctsP.AMSend -> ActiveMessageC.AMSend[AM_TCTS_MSG];
+    TctsP.Packet -> ActiveMessageC;
 }
 
     

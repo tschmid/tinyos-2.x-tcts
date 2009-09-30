@@ -22,10 +22,10 @@
  * Ported to T2: 3/17/08 by Brano Kusy (branislav.kusy@gmail.com)
  */
 
-#ifndef TEST_FTSP_H
-#define TEST_FTSP_H
+#ifndef TEST_TCTS_H
+#define TEST_TCTS_H
 
-typedef nx_struct test_tdts_msg
+typedef nx_struct test_tcts_msg
 {
   nx_uint16_t    src_addr;
   nx_uint16_t    counter;
@@ -37,7 +37,7 @@ typedef nx_struct test_tdts_msg
   nx_uint8_t     ftsp_seq;
   nx_uint8_t     ftsp_table_entries;
   nx_uint16_t    temp;
-} test_tdts_msg_t;
+} test_tcts_msg_t;
 
 enum
 {

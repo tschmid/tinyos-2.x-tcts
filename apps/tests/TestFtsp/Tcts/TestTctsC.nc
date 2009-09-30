@@ -58,7 +58,7 @@ implementation
         //call Leds.led0Toggle();
         if (!locked && call PacketTimeStamp.isValid(msgPtr)) {
             radio_count_msg_t* rcm = (radio_count_msg_t*)call Packet.getPayload(msgPtr, sizeof(radio_count_msg_t));
-            test_tdts_msg_t* report = (test_tdts_msg_t*)call Packet.getPayload(&msg, sizeof(test_tdts_msg_t));
+            test_tcts_msg_t* report = (test_tcts_msg_t*)call Packet.getPayload(&msg, sizeof(test_tcts_msg_t));
 
             uint32_t rxTimestamp = call PacketTimeStamp.timestamp(msgPtr);
 
@@ -81,7 +81,7 @@ implementation
 
     event void RandomTimer.fired()
     {
-        if(locked && (call AMSend.send(4000, &msg, sizeof(test_tdts_msg_t)) == SUCCESS)){
+        if(locked && (call AMSend.send(4000, &msg, sizeof(test_tcts_msg_t)) == SUCCESS)){
             call Leds.led2On();
         } else {
             locked = FALSE;
