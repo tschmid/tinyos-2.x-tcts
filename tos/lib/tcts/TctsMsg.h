@@ -19,4 +19,14 @@ enum
     AM_TCTS_CMD_MSG = 139
 };
 
+enum
+{
+    GET_SKEWS = 1,
+    WRITE_CONFIG = 2,
+
+    SKEW_RSP = 0x81,
+    WRITE_RSP = 0x82,
+    WRITE_FAILED_RSP = 0x83,
+};
+
 #endif //TCTS_MSG_H
