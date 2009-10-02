@@ -55,9 +55,9 @@ implementation
     components new TimerMilliC() as TimerC;
     TctsP.BeaconTimer -> TimerC;
 
-    components new ConfigStorageC(VOLUME_CONFIGTEST);
-    TctsP.Config -> ConfigStorageC.ConfigStorage;
-    TctsP.Mount  -> ConfigStorageC.Mount;
+    components new BlockStorageC(VOLUME_CONFIGTEST);
+    TctsP.BlockRead -> BlockStorageC.BlockRead;
+    TctsP.BlockWrite -> BlockStorageC.BlockWrite;
 
     components ActiveMessageC;
     TctsP.RadioControl -> ActiveMessageC;

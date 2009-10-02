@@ -16,7 +16,7 @@ typedef nx_struct tcts_cmd_msg
 enum
 {
     AM_TCTS_MSG = 138,
-    AM_TCTS_CMD_MSG = 139
+    AM_TCTS_CMD_MSG = 150
 };
 
 enum

@@ -10,7 +10,7 @@ import tinyos.message.Message
 DEFAULT_MESSAGE_SIZE = 1
 
 # The Active Message type associated with this message.
-AM_TYPE = 139
+AM_TYPE = 150
 
 class TctsCmdMsg(tinyos.message.Message.Message):
     # Create a new TctsCmdMsg of size 1.

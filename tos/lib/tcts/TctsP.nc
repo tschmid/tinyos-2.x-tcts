@@ -26,8 +26,8 @@ generic module TctsP(typedef precision_tag)
 
         interface Read<uint16_t> as Temperature;
 
-        interface ConfigStorage as Config;
-        interface Mount;
+        interface BlockRead;
+        interface BlockWrite;
 
         interface SplitControl as RadioControl;
         interface Receive;
@@ -47,21 +47,30 @@ implementation
 {
 
     enum {
-        CONFIG_ADDR = 0,
-        CONFIG_VERSION = 1,
+        BLOCK_ADDR = 0,
+        CONFIG_VERSION = 5,
 
         CALIBRATION = 1,
         COMPENSATION = 2,
         DEFAULT_PERIOD = 10,
         NUM_CALIB    = 3,              // how many calibration messages are needed?
-        NUM_TEMP     = 2048,
-        TEMP_BINS    = 0xFFFF/2048,
+        NUM_TEMP     = 512,
+        TEMP_BINS    = 0xFFFF/512,
         INVALID_TEMP = 0xFFFF,
     };
 
+
+    enum {
+        STATE_INIT,
+        STATE_READ,
+    };
+
     uint8_t state;
+    uint8_t storageState;
     uint8_t calibCounter; // counts how many calibration messages we received
     uint16_t currentPeriod; // the current beacon interval in seconds
+    bool locked;
+    message_t msg;
 
     typedef struct config_t {
         uint16_t version;
@@ -74,47 +83,36 @@ implementation
     {
         currentPeriod = DEFAULT_PERIOD;
         state = CALIBRATION;
+        storageState = STATE_INIT;
         calibCounter = 0;
         conf.version = 0;
+        locked = FALSE;
         return SUCCESS;
     }
 
     event void Boot.booted()
     {
-        if (call Mount.mount() != SUCCESS) {
+        if (call BlockRead.read(BLOCK_ADDR, &conf, sizeof(conf)) != SUCCESS) {
             // Handle failure
+            call Leds.led2On();
         }
-
+        call RadioControl.start();
     }
 
-    event void Mount.mountDone(error_t error) {
-        if (error == SUCCESS) {
-            if(call Config.valid() == TRUE) {
-                if (call Config.read(CONFIG_ADDR, &conf, sizeof(conf)) != SUCCESS) {
-                    // Handle failure
-                }
-            }
-            else {
-                // Invalid volume. Commit to make valid
-                //call Leds.led1On();
-                if (call Config.commit() == SUCCESS) {
-                    call Leds.led0On();
-                }
-                else {
-                    // Handle failure
-                }
-            }
-        } else {
-            // Handle failure
-        }
-
-    }
-
-    event void Config.readDone(storage_addr_t addr, void* buf, storage_len_t len, error_t err) __attribute__((noinline)) {
+    event void BlockRead.readDone(storage_addr_t addr, void* buf, storage_len_t len, error_t err) {
         if (err == SUCCESS) {
+            call Leds.led0On();
             memcpy(&conf, buf, len);
             if (conf.version == CONFIG_VERSION) {
                 // everything is ok!
+                if(storageState == STATE_INIT){
+                    storageState = STATE_READ;
+                    call Leds.led0On();
+                    call Leds.led1On();
+                    call Leds.led2On();
+                    call StdControl.start();
+                    return;
+                }
             }
             else {
                 // version mismatch. Restore default.
@@ -123,47 +121,74 @@ implementation
 
                 for(i=0; i<NUM_TEMP; i++)
                     conf.calTable[i] = INVALID_TEMP; 
-            }
-            call Config.write(CONFIG_ADDR, &conf, sizeof(conf));
-        }
-        else {
-            // Handle failure
-        }
-
-    }
-
-    event void Config.writeDone(storage_addr_t addr, void*buf, storage_len_t len, error_t err) {
-        // Verify addr and len
-
-        if ( err == SUCCESS ) {
-            if (call Config.commit() != SUCCESS) {
-                // Handle failure
-            }
-        }
-        else {
-            // Handle failure
-        }
-    }
-
-    event void Config.commitDone(error_t err) {
-        if(conf.version == 0) {
-            // we didn't read a configuration!
-            // try to read it again
-            if(call Config.valid() == TRUE) {
-                if (call Config.read(CONFIG_ADDR, &conf, sizeof(conf)) != SUCCESS) {
-                    // Handle failure
+                
+                if(call BlockWrite.erase() != SUCCESS)
+                {
+                    // handle failure
+                    call Leds.led2On();
                 }
             }
-        } 
+        }
         else {
-            call Leds.led0On();
-            call Leds.led1On();
+            // Handle failure
             call Leds.led2On();
-            call RadioControl.start();
+        }
+
+    }
+
+    event void BlockWrite.eraseDone(error_t result)
+    {
+        if(result == SUCCESS)
+        {
+            if(call BlockWrite.write(BLOCK_ADDR, &conf, sizeof(conf)) != SUCCESS)
+            {
+                call Leds.led2On();
+            }
+        }
+        else {
+            call Leds.led2On();
         }
     }
+
+    event void BlockWrite.writeDone(storage_addr_t addr, void* buf, storage_len_t len, error_t err) {
+        tcts_msg_t* tm = (tcts_msg_t*)call Packet.getPayload(&msg, sizeof(tcts_msg_t));
+
+
+        call Leds.led1On();
+
+        if ( err == SUCCESS ) {
+            call BlockWrite.sync();
+            if(storageState == STATE_INIT){
+                storageState = STATE_READ;
+                call Leds.led0On();
+                call Leds.led1On();
+                call Leds.led2On();
+                call StdControl.start();
+            }
+            tm->cmd = WRITE_RSP;
+        }
+        else {
+            // Handle failure
+            call Leds.led2On();
+            tm->cmd = WRITE_FAILED_RSP;
+        }
+        // send the write done message
+        if (!locked) {
+            tm->cmd = WRITE_RSP;
+
+            locked = TRUE;
+            call Leds.led0Toggle();
+            if(call AMSend.send(4000, &msg, sizeof(tcts_msg_t)) != SUCCESS)
+            {
+                locked = FALSE;
+            }
+        }
+        else {
+            call Leds.led2Toggle();
+        }
+    }
+
     event void RadioControl.startDone(error_t err) {
-        call StdControl.start();
     }
 
     command error_t StdControl.start()
@@ -176,6 +201,9 @@ implementation
             call BeaconTimer.startPeriodic(currentPeriod*1024);
         }
 
+        call Leds.led0Off();
+        call Leds.led1Off();
+        call Leds.led2Off();
         return SUCCESS;
     }
 
@@ -266,9 +294,15 @@ implementation
     event message_t* Receive.receive(message_t* msgPtr, void* payload, uint8_t len)
     {
         tcts_cmd_msg_t* m = (tcts_cmd_msg_t*)call Packet.getPayload(msgPtr, sizeof(tcts_cmd_msg_t));
+        call Leds.led0Toggle();
 
         switch(m->cmd)
         {
+            case GET_SKEWS:
+                break;
+            case WRITE_CONFIG:
+                call BlockWrite.erase();
+                break;
             default:
                 call Leds.led0Toggle();
         }
@@ -276,8 +310,18 @@ implementation
     }
 
     event void AMSend.sendDone(message_t* ptr, error_t success) {
+        if(success == SUCCESS)
+        {
+            call Leds.led0Off();
+            call Leds.led1Off();
+            call Leds.led2Off();
+        }
 
+        locked = FALSE;
     }
 
     event void RadioControl.stopDone(error_t err) {}
+    event void BlockWrite.syncDone(error_t result) {
+    }
+    event void BlockRead.computeCrcDone(storage_addr_t addr, storage_len_t len, uint16_t crc, error_t result) {}
 }

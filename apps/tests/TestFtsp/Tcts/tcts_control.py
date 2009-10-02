@@ -92,14 +92,14 @@ class Tcts:
             # send write message
             cmsg = TctsCmdMsg.TctsCmdMsg()
             cmsg.set_cmd(WRITE_CONFIG)
-            self.mif.sendMsg(self.tos_source, 0x2, cmsg.get_amType(), 0,
+            self.mif.sendMsg(self.tos_source, 0x3, cmsg.get_amType(), 0,
                     cmsg)
 
         if c == ord('g'):
             # send write message
             cmsg = TctsCmdMsg.TctsCmdMsg()
             cmsg.set_cmd(GET_SKEWS)
-            self.mif.sendMsg(self.tos_source, 0x2, cmsg.get_amType(), 0,
+            self.mif.sendMsg(self.tos_source, 0x3, cmsg.get_amType(), 0,
                     cmsg)
 
     def close(self):
