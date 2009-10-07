@@ -5,7 +5,7 @@
 
 #BUILD_EXTRA_DEPS = TestTctsMsg.py
 #BUILD_EXTRA_DEPS = TctsMsg.py
-BUILD_EXTRA_DEPS = TctsCmdMsg.py
+#BUILD_EXTRA_DEPS = TctsCmdMsg.py
 
 TestTctsMsg.py: TestTcts.h
 	mig python -target=$(PLATFORM) $(CFLAGS) -python-classname=TestTctsMsg TestTcts.h test_tcts_msg -o $@
@@ -20,7 +20,7 @@ COMPONENT=TestTctsAppC
 PFLAGS += -DTIMESYNC_RATE=3
 #PFLAGS += -DTIMESYNC_DEBUG
 
-CFLAGS += -DTOSH_DATA_LENGTH=50
+CFLAGS += -DTOSH_DATA_LENGTH=90
 
 PFLAGS += -I$(TOSDIR)/lib/ftsp -I$(TOSDIR)/lib/tcts -I$(TOSDIR)/../apps/RadioCountToLeds
 PFLAGS += -I$(TOSDIR)/lib/printf

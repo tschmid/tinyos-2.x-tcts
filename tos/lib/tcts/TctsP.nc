@@ -48,16 +48,17 @@ implementation
 
     enum {
         BLOCK_ADDR = 0,
-        CONFIG_VERSION = 5,
+        CONFIG_VERSION = 7,
 
         CALIBRATION = 1,
         COMPENSATION = 2,
-        DEFAULT_PERIOD = 10,
+        DEFAULT_PERIOD = 100,
         NUM_CALIB    = 3,              // how many calibration messages are needed?
-        NUM_TEMP     = 512,
-        TEMP_BINS    = 0xFFFF/512,
-        INVALID_TEMP = 0xFFFF,
+        NUM_TEMP     = 2048,
+        TEMP_BINS    = 0xFFFF/16384, 
     };
+
+#define INVALID_TEMP 3.141
 
 
     enum {
@@ -69,8 +70,10 @@ implementation
     uint8_t storageState;
     uint8_t calibCounter; // counts how many calibration messages we received
     uint16_t currentPeriod; // the current beacon interval in seconds
-    bool locked;
+    bool locked;            // protects the msg buffer
     message_t msg;
+
+    uint16_t tempIndex; // current position in reading the temperature
 
     typedef struct config_t {
         uint16_t version;
@@ -86,6 +89,7 @@ implementation
         storageState = STATE_INIT;
         calibCounter = 0;
         conf.version = 0;
+        tempIndex = 0;
         locked = FALSE;
         return SUCCESS;
     }
@@ -152,7 +156,7 @@ implementation
 
     event void BlockWrite.writeDone(storage_addr_t addr, void* buf, storage_len_t len, error_t err) {
         tcts_msg_t* tm = (tcts_msg_t*)call Packet.getPayload(&msg, sizeof(tcts_msg_t));
-
+        tm->src = TOS_NODE_ID;
 
         call Leds.led1On();
 
@@ -299,7 +303,40 @@ implementation
         switch(m->cmd)
         {
             case GET_SKEWS:
-                break;
+                {
+                    uint16_t i;
+                    uint8_t j;
+                    tcts_msg_t* tm = (tcts_msg_t*)call Packet.getPayload(&msg, sizeof(tcts_msg_t));
+                    tm->src = TOS_NODE_ID;
+
+                    call Leds.led1On();
+
+                    tm->cmd = SKEW_RSP;
+                    // send the message
+                    if (!locked) {
+                        locked = TRUE;
+
+                        // first, go to the first valid entry
+                        for (i=tempIndex; i<tempIndex+NUM_TEMP; i++) {
+                            if (conf.calTable[i%NUM_TEMP] != INVALID_TEMP) {
+                                break;
+                            }
+                        }
+                        for (j=0; j < 10; j++) {
+                            tm->skews[j] = conf.calTable[(i+j)%NUM_TEMP];
+                        }
+                        tm->startIndex = i;
+                        tempIndex = i+10;
+                        tempIndex = tempIndex%NUM_TEMP;
+
+                        call Leds.led0Toggle();
+                        if(call AMSend.send(4000, &msg, sizeof(tcts_msg_t)) != SUCCESS)
+                        {
+                            locked = FALSE;
+                        }
+                    }
+                    break;
+                }
             case WRITE_CONFIG:
                 call BlockWrite.erase();
                 break;

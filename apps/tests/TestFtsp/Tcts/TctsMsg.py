@@ -7,14 +7,14 @@
 import tinyos.message.Message
 
 # The default size of this message type in bytes.
-DEFAULT_MESSAGE_SIZE = 43
+DEFAULT_MESSAGE_SIZE = 45
 
 # The Active Message type associated with this message.
 AM_TYPE = 138
 
 class TctsMsg(tinyos.message.Message.Message):
-    # Create a new TctsMsg of size 43.
-    def __init__(self, data="", addr=None, gid=None, base_offset=0, data_length=43):
+    # Create a new TctsMsg of size 45.
+    def __init__(self, data="", addr=None, gid=None, base_offset=0, data_length=45):
         tinyos.message.Message.Message.__init__(self, data, addr, gid, base_offset, data_length)
         self.amTypeSet(AM_TYPE)
 
@@ -30,6 +30,10 @@ class TctsMsg(tinyos.message.Message.Message):
     #
     def __str__(self):
         s = "Message <TctsMsg> \n"
+        try:
+            s += "  [src=0x%x]\n" % (self.get_src())
+        except:
+            pass
         try:
             s += "  [cmd=0x%x]\n" % (self.get_cmd())
         except:
@@ -50,9 +54,64 @@ class TctsMsg(tinyos.message.Message.Message):
     # Message-type-specific access methods appear below.
 
     #
+    # Accessor methods for field: src
+    #   Field type: int
+    #   Offset (bits): 0
+    #   Size (bits): 16
+    #
+
+    #
+    # Return whether the field 'src' is signed (False).
+    #
+    def isSigned_src(self):
+        return False
+
+    #
+    # Return whether the field 'src' is an array (False).
+    #
+    def isArray_src(self):
+        return False
+
+    #
+    # Return the offset (in bytes) of the field 'src'
+    #
+    def offset_src(self):
+        return (0 / 8)
+
+    #
+    # Return the offset (in bits) of the field 'src'
+    #
+    def offsetBits_src(self):
+        return 0
+
+    #
+    # Return the value (as a int) of the field 'src'
+    #
+    def get_src(self):
+        return self.getUIntElement(self.offsetBits_src(), 16, 1)
+
+    #
+    # Set the value of the field 'src'
+    #
+    def set_src(self, value):
+        self.setUIntElement(self.offsetBits_src(), 16, value, 1)
+
+    #
+    # Return the size, in bytes, of the field 'src'
+    #
+    def size_src(self):
+        return (16 / 8)
+
+    #
+    # Return the size, in bits, of the field 'src'
+    #
+    def sizeBits_src(self):
+        return 16
+
+    #
     # Accessor methods for field: cmd
     #   Field type: short
-    #   Offset (bits): 0
+    #   Offset (bits): 16
     #   Size (bits): 8
     #
 
@@ -72,13 +131,13 @@ class TctsMsg(tinyos.message.Message.Message):
     # Return the offset (in bytes) of the field 'cmd'
     #
     def offset_cmd(self):
-        return (0 / 8)
+        return (16 / 8)
 
     #
     # Return the offset (in bits) of the field 'cmd'
     #
     def offsetBits_cmd(self):
-        return 0
+        return 16
 
     #
     # Return the value (as a short) of the field 'cmd'
@@ -107,7 +166,7 @@ class TctsMsg(tinyos.message.Message.Message):
     #
     # Accessor methods for field: startIndex
     #   Field type: int
-    #   Offset (bits): 8
+    #   Offset (bits): 24
     #   Size (bits): 16
     #
 
@@ -127,13 +186,13 @@ class TctsMsg(tinyos.message.Message.Message):
     # Return the offset (in bytes) of the field 'startIndex'
     #
     def offset_startIndex(self):
-        return (8 / 8)
+        return (24 / 8)
 
     #
     # Return the offset (in bits) of the field 'startIndex'
     #
     def offsetBits_startIndex(self):
-        return 8
+        return 24
 
     #
     # Return the value (as a int) of the field 'startIndex'
@@ -162,7 +221,7 @@ class TctsMsg(tinyos.message.Message.Message):
     #
     # Accessor methods for field: skews
     #   Field type: int[]
-    #   Offset (bits): 24
+    #   Offset (bits): 40
     #   Size of each element (bits): 32
     #
 
@@ -182,7 +241,7 @@ class TctsMsg(tinyos.message.Message.Message):
     # Return the offset (in bytes) of the field 'skews'
     #
     def offset_skews(self, index1):
-        offset = 24
+        offset = 40
         if index1 < 0 or index1 >= 10:
             raise IndexError
         offset += 0 + index1 * 32
@@ -192,7 +251,7 @@ class TctsMsg(tinyos.message.Message.Message):
     # Return the offset (in bits) of the field 'skews'
     #
     def offsetBits_skews(self, index1):
-        offset = 24
+        offset = 40
         if index1 < 0 or index1 >= 10:
             raise IndexError
         offset += 0 + index1 * 32

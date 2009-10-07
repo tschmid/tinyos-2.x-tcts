@@ -1,3 +1,5 @@
+#!/usr/bin/env "python -W ignore::DeprecationWarning"
+
 """
 parameters:
     - the first parameter to this application is a MOTECOM string.
@@ -16,6 +18,9 @@ from tinyos.message.Message import *
 from tinyos.message.SerialPacket import *
 from tinyos.packet.Serial import Serial
 
+INVALID_TEMP = 3.141
+NUM_TEMP = 2048
+
 # hub commands
 GET_SKEWS        = 0x01
 WRITE_CONFIG     = 0x02
@@ -24,7 +29,6 @@ WRITE_CONFIG     = 0x02
 SKEW_RSP         = 0x81
 WRITE_RSP        = 0x82
 WRITE_FAILED_RSP = 0x83
-
 
 class Tcts:
 
@@ -38,6 +42,8 @@ class Tcts:
         self.binding = False
         self.DEBUG = debug
         self.nodes = {}
+
+        self.state = GET_SKEWS
 
         self.history = []
         self.maxSizeHistory = 50
@@ -63,13 +69,20 @@ class Tcts:
         """
         if msg.get_amType() == TctsMsg.AM_TYPE:
             if msg.get_cmd() == SKEW_RSP:
-                pass
+                self.scr.addstr(10, 0, "Received Skews from %d on %s"%(msg.get_src(), time.ctime()))
+                for i in range(0,10):
+                    self.scr.addstr(11+i, 0, 50*" ")
+                i = 0
+                for s in msg.get_skews():
+                    if abs(s - INVALID_TEMP) > 1e-6:
+                        self.scr.addstr(11+i, 0, "Index %d skew %e"%((msg.get_startIndex() + i)%NUM_TEMP, s))
+                    i += 1
             elif msg.get_cmd() == WRITE_RSP:
-                self.scr.addstr(10, 0, "Write Done on %s"%(src))
+                self.scr.addstr(10, 0, "Write Done on %d at %s"%(msg.get_src(), time.ctime()))
                 # write done
                 pass
-            elif msg.get_cmd() == WRITE_FAILED:
-                self.scr.addstr(10, 0, "Write FAILED on %s"%(src))
+            elif msg.get_cmd() == WRITE_FAILED_RSP:
+                self.scr.addstr(10, 0, "Write FAILED on %d"%(msg.get_src()))
         else:
             print "Unknown message type:", msg.get_amType(), msg
 
@@ -90,16 +103,18 @@ class Tcts:
             return
         if c == ord('w'):
             # send write message
-            cmsg = TctsCmdMsg.TctsCmdMsg()
-            cmsg.set_cmd(WRITE_CONFIG)
-            self.mif.sendMsg(self.tos_source, 0x3, cmsg.get_amType(), 0,
-                    cmsg)
+            self.state=WRITE_CONFIG
+            self.scr.addstr(8, 0, "Write Mode")
 
         if c == ord('g'):
             # send write message
+            self.state=GET_SKEWS
+            self.scr.addstr(8, 0, "Get Mode")
+
+        if c - ord('0') in range(1, 10):
             cmsg = TctsCmdMsg.TctsCmdMsg()
-            cmsg.set_cmd(GET_SKEWS)
-            self.mif.sendMsg(self.tos_source, 0x3, cmsg.get_amType(), 0,
+            cmsg.set_cmd(self.state)
+            self.mif.sendMsg(self.tos_source, c-ord('0'), cmsg.get_amType(), 0,
                     cmsg)
 
     def close(self):
