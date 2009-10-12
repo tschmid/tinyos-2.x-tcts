@@ -7,14 +7,14 @@
 import tinyos.message.Message
 
 # The default size of this message type in bytes.
-DEFAULT_MESSAGE_SIZE = 21
+DEFAULT_MESSAGE_SIZE = 23
 
 # The Active Message type associated with this message.
 AM_TYPE = 137
 
 class TestTctsMsg(tinyos.message.Message.Message):
-    # Create a new TestTctsMsg of size 21.
-    def __init__(self, data="", addr=None, gid=None, base_offset=0, data_length=21):
+    # Create a new TestTctsMsg of size 23.
+    def __init__(self, data="", addr=None, gid=None, base_offset=0, data_length=23):
         tinyos.message.Message.Message.__init__(self, data, addr, gid, base_offset, data_length)
         self.amTypeSet(AM_TYPE)
 
@@ -64,6 +64,10 @@ class TestTctsMsg(tinyos.message.Message.Message):
             pass
         try:
             s += "  [ftsp_table_entries=0x%x]\n" % (self.get_ftsp_table_entries())
+        except:
+            pass
+        try:
+            s += "  [temp=0x%x]\n" % (self.get_temp())
         except:
             pass
         return s
@@ -564,4 +568,59 @@ class TestTctsMsg(tinyos.message.Message.Message):
     #
     def sizeBits_ftsp_table_entries(self):
         return 8
+
+    #
+    # Accessor methods for field: temp
+    #   Field type: int
+    #   Offset (bits): 168
+    #   Size (bits): 16
+    #
+
+    #
+    # Return whether the field 'temp' is signed (False).
+    #
+    def isSigned_temp(self):
+        return False
+
+    #
+    # Return whether the field 'temp' is an array (False).
+    #
+    def isArray_temp(self):
+        return False
+
+    #
+    # Return the offset (in bytes) of the field 'temp'
+    #
+    def offset_temp(self):
+        return (168 / 8)
+
+    #
+    # Return the offset (in bits) of the field 'temp'
+    #
+    def offsetBits_temp(self):
+        return 168
+
+    #
+    # Return the value (as a int) of the field 'temp'
+    #
+    def get_temp(self):
+        return self.getUIntElement(self.offsetBits_temp(), 16, 1)
+
+    #
+    # Set the value of the field 'temp'
+    #
+    def set_temp(self, value):
+        self.setUIntElement(self.offsetBits_temp(), 16, value, 1)
+
+    #
+    # Return the size, in bytes, of the field 'temp'
+    #
+    def size_temp(self):
+        return (16 / 8)
+
+    #
+    # Return the size, in bits, of the field 'temp'
+    #
+    def sizeBits_temp(self):
+        return 16
 

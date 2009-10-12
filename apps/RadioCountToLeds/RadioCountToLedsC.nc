@@ -67,7 +67,7 @@ implementation {
 
   event void AMControl.startDone(error_t err) {
     if (err == SUCCESS) {
-      call MilliTimer.startPeriodic(250);
+      call MilliTimer.startPeriodic(2048);
     }
     else {
       call AMControl.start();
