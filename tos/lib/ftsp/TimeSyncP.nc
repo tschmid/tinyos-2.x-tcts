@@ -84,6 +84,7 @@ implementation
 
     TableItem   table[MAX_ENTRIES];
     uint8_t tableEntries;
+    uint8_t lastEntry;
 
     enum {
         STATE_IDLE = 0x00,
@@ -211,8 +212,8 @@ implementation
         atomic
         {
             skew = newSkew;
-            offsetAverage = newOffsetAverage;
-            localAverage = newLocalAverage;
+            offsetAverage = table[lastEntry].timeOffset;
+            localAverage = table[lastEntry].localTime;
             numEntries = tableEntries;
         }
     }
@@ -275,6 +276,7 @@ implementation
 
         table[freeItem].localTime = msg->localTime;
         table[freeItem].timeOffset = msg->globalTime - msg->localTime;
+        lastEntry = freeItem;
     }
 
     void task processMsg()

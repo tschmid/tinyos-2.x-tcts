@@ -16,13 +16,16 @@ generic module TctsP(typedef precision_tag)
     uses
     {
         interface GlobalTime<precision_tag> as TSGlobalTime;
-        interface TimeSyncInfo;
+        interface TimeSyncInfo as TSTimeSyncInfo;
         interface TimeSyncMode;
         interface TimeSyncNotify;
         interface Leds;
 
         interface Boot;
         interface Timer<TMilli> as BeaconTimer;
+
+        interface Init as CompensationAlarmInit;
+        interface Alarm<T32khz,uint32_t> as CompensationAlarm;
 
         interface Read<uint16_t> as Temperature;
 
@@ -40,11 +43,18 @@ generic module TctsP(typedef precision_tag)
         interface StdControl;
 
         interface GlobalTime<precision_tag>;
+        interface TimeSyncInfo;
+        interface TctsInfo;
     }
 }
 
 implementation
 {
+
+#define COMPINTERVAL 163840L        // update every 5 seconds
+
+#define DOCALIB  // uncomment to enable automatic calibration
+#define NOCOMP   // don't do any compensation
 
     enum {
         BLOCK_ADDR = 0,
@@ -72,8 +82,10 @@ implementation
     uint16_t currentPeriod; // the current beacon interval in seconds
     bool locked;            // protects the msg buffer
     message_t msg;
+    uint32_t lastAlarm;
 
     uint16_t tempIndex; // current position in reading the temperature
+    norace uint16_t currentTemp;
 
     typedef struct config_t {
         uint16_t version;
@@ -81,6 +93,12 @@ implementation
     } config_t;
 
     config_t conf;
+
+    // time sync globals
+    float skew;
+    uint32_t localAverage;
+    int32_t offsetAverage;
+    float offsetAverageF;
 
     command error_t Init.init()
     {
@@ -91,7 +109,10 @@ implementation
         conf.version = 0;
         tempIndex = 0;
         locked = FALSE;
-        return SUCCESS;
+        skew = 0.0;
+        localAverage = 0;
+        offsetAverage = 0;
+        return call CompensationAlarmInit.init();
     }
 
     event void Boot.booted()
@@ -99,6 +120,10 @@ implementation
         if (call BlockRead.read(BLOCK_ADDR, &conf, sizeof(conf)) != SUCCESS) {
             // Handle failure
             call Leds.led2On();
+        }
+        atomic {
+            lastAlarm = call CompensationAlarm.getNow();
+            call CompensationAlarm.startAt(lastAlarm, COMPINTERVAL);
         }
         call RadioControl.start();
     }
@@ -223,6 +248,12 @@ implementation
 
     event void TimeSyncNotify.msg_received()
     {
+        atomic {
+            localAverage = call TSTimeSyncInfo.getSyncPoint();
+            offsetAverage = call TSTimeSyncInfo.getOffset();
+            offsetAverageF = offsetAverage;
+        }
+
         switch(state)
         {
             case CALIBRATION:
@@ -240,32 +271,76 @@ implementation
 
     event void Temperature.readDone(error_t result, uint16_t val)
     {
+        currentTemp = val;
         switch(state)
         {
             case CALIBRATION:
-                printf("CALIB temp: %u %u\n", val, val/TEMP_BINS);
                 if(calibCounter == NUM_CALIB)
                 {
                     // we collected enough data points. Skew is now valid!
                     uint16_t i = val/TEMP_BINS;
-                    float skew = call TimeSyncInfo.getSkew();
-
-                    state = COMPENSATION;
-                    conf.calTable[i] = skew;
-
-                    printf("CALIB ct: %u %ld\n", i, (int32_t)(skew*100000000));
+                    atomic {
+                        skew = call TSTimeSyncInfo.getSkew();
+#ifndef NOCOMP
+                        state = COMPENSATION;
+#endif
+                        conf.calTable[i] = skew;
+                    }
                 }
-                printfflush();
                 break;
             case COMPENSATION:
-                printf("COMP temp: %u %u %ld\n", val, val/TEMP_BINS, (int32_t)((call TimeSyncInfo.getSkew())*100000000));
                 if(conf.calTable[val/TEMP_BINS] == INVALID_TEMP)
                 {
                     // we don't know the current skew, go back to calibration!
-                    state = CALIBRATION;
+
+                    atomic {
+#ifdef DOCALIB
+                            state = CALIBRATION;
+#endif
+                    }
                     calibCounter = 0;
+                } 
+                else {
+                    // first, update our estimate of global time using old
+                    // skew
+                    atomic {
+                        offsetAverageF = offsetAverageF + (skew + conf.calTable[val/TEMP_BINS]) / 2.0 * COMPINTERVAL;
+                        offsetAverage = (int32_t)offsetAverageF;
+
+                        localAverage += COMPINTERVAL;
+
+                        // now, update the skew
+                        skew = conf.calTable[val/TEMP_BINS];
+                    }
+
+
+                break;
                 }
-                printfflush();
+        }
+    }
+
+    task void getTemperature()
+    {
+        call Temperature.read();
+    }
+
+    async event void CompensationAlarm.fired()
+    {
+        // fires every time we have to do compensation
+        //
+        // setup the next trigger
+        lastAlarm = call CompensationAlarm.getAlarm();
+        call CompensationAlarm.startAt(lastAlarm, COMPINTERVAL);
+
+        switch(state)
+        {
+            case CALIBRATION:
+                // do nothing
+                post getTemperature(); // do it for demo...
+                break;
+            case COMPENSATION:
+                // get a temperature sample
+                post getTemperature();
                 break;
         }
     }
@@ -273,21 +348,46 @@ implementation
     async command uint32_t GlobalTime.getLocalTime()
     {
         return call TSGlobalTime.getLocalTime();
+
     }
 
     async command error_t GlobalTime.getGlobalTime(uint32_t *time)
     {
-        return call TSGlobalTime.getGlobalTime(time);
+        switch(state)
+        {
+            case CALIBRATION:
+                return call TSGlobalTime.getGlobalTime(time);
+            case COMPENSATION:
+                *time = call GlobalTime.getLocalTime();
+                return call GlobalTime.local2Global(time);
+        }
     }
 
     async command error_t GlobalTime.local2Global(uint32_t *time)
     {
-        return call TSGlobalTime.local2Global(time);
+        switch(state)
+        {
+            case CALIBRATION:
+                return call TSGlobalTime.local2Global(time);
+            case COMPENSATION:
+                *time += offsetAverage + (int32_t)(skew * (int32_t)(*time - localAverage));
+                return SUCCESS;
+        }
     }
 
     async command error_t GlobalTime.global2Local(uint32_t *time)
     {
-        return call TSGlobalTime.global2Local(time);
+        switch(state)
+        {
+            case CALIBRATION:
+                return call TSGlobalTime.global2Local(time);
+            case COMPENSATION:
+                {
+                    uint32_t approxLocalTime = *time - offsetAverage;
+                    *time = approxLocalTime - (int32_t)(skew * (int32_t)(approxLocalTime - localAverage));
+                    return SUCCESS;
+                }
+        }
     }
 
     event void TimeSyncNotify.msg_sent()
@@ -361,4 +461,16 @@ implementation
     event void BlockWrite.syncDone(error_t result) {
     }
     event void BlockRead.computeCrcDone(storage_addr_t addr, storage_len_t len, uint16_t crc, error_t result) {}
+
+    async command float     TimeSyncInfo.getSkew() { return skew; }
+    async command uint32_t  TimeSyncInfo.getOffset() { return offsetAverage; }
+    async command uint32_t  TimeSyncInfo.getSyncPoint() { return localAverage; }
+    async command uint16_t  TimeSyncInfo.getRootID() { return call TSTimeSyncInfo.getRootID(); }
+    async command uint8_t   TimeSyncInfo.getSeqNum() { return call TSTimeSyncInfo.getSeqNum(); }
+    async command uint8_t   TimeSyncInfo.getNumEntries() { return call TSTimeSyncInfo.getNumEntries(); }
+    async command uint8_t   TimeSyncInfo.getHeartBeats() { return call TSTimeSyncInfo.getHeartBeats(); }
+
+    async command uint16_t TctsInfo.getTemp() { return currentTemp; }
+    async command uint8_t TctsInfo.getState() { return state; }
+
 }

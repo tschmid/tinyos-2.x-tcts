@@ -36,7 +36,8 @@ typedef nx_struct test_tcts_msg
   nx_uint16_t    ftsp_root_addr;
   nx_uint8_t     ftsp_seq;
   nx_uint8_t     ftsp_table_entries;
-  nx_uint16_t    temp;
+  nx_uint16_t    tcts_temp;
+  nx_uint8_t     tcts_state;
 } test_tcts_msg_t;
 
 enum

@@ -31,6 +31,7 @@ module TestTctsC
     {
         interface GlobalTime<T32khz>;
         interface TimeSyncInfo;
+        interface TctsInfo;
         interface Receive;
         interface AMSend;
         interface Packet;
@@ -71,6 +72,8 @@ implementation
             report->ftsp_root_addr = call TimeSyncInfo.getRootID();
             report->ftsp_seq = call TimeSyncInfo.getSeqNum();
             report->ftsp_table_entries = call TimeSyncInfo.getNumEntries();
+            report->tcts_temp = call TctsInfo.getTemp();
+            report->tcts_state = call TctsInfo.getState();
 
             locked = TRUE;
             call RandomTimer.startOneShot(call Random.rand16() % 64);

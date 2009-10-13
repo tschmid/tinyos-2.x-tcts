@@ -17,13 +17,15 @@ configuration TctsC
         interface StdControl;
 
         interface GlobalTime<T32khz>;
+        interface TimeSyncInfo;
+        interface TctsInfo;
     }
 
     uses
     {
         interface Boot;
         interface GlobalTime<T32khz> as TSGlobalTime;
-        interface TimeSyncInfo;
+        interface TimeSyncInfo as TSTimeSyncInfo;
         interface TimeSyncMode;
         interface TimeSyncNotify;
     }
@@ -39,10 +41,16 @@ implementation
     StdControl     = TctsP;
 
     TSGlobalTime   = TctsP;
+    TSTimeSyncInfo = TctsP;
     GlobalTime     = TctsP;
     TimeSyncInfo   = TctsP;
     TimeSyncMode   = TctsP;
     TimeSyncNotify = TctsP;
+    TctsInfo       = TctsP;
+
+    components new Alarm32khz32C() as CompAlarm;
+    TctsP.CompensationAlarm -> CompAlarm;
+    TctsP.CompensationAlarmInit -> CompAlarm;
 
     components new Msp430InternalTemperatureC() as T;
 

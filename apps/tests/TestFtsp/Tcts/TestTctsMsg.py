@@ -7,14 +7,14 @@
 import tinyos.message.Message
 
 # The default size of this message type in bytes.
-DEFAULT_MESSAGE_SIZE = 23
+DEFAULT_MESSAGE_SIZE = 24
 
 # The Active Message type associated with this message.
 AM_TYPE = 137
 
 class TestTctsMsg(tinyos.message.Message.Message):
-    # Create a new TestTctsMsg of size 23.
-    def __init__(self, data="", addr=None, gid=None, base_offset=0, data_length=23):
+    # Create a new TestTctsMsg of size 24.
+    def __init__(self, data="", addr=None, gid=None, base_offset=0, data_length=24):
         tinyos.message.Message.Message.__init__(self, data, addr, gid, base_offset, data_length)
         self.amTypeSet(AM_TYPE)
 
@@ -67,7 +67,11 @@ class TestTctsMsg(tinyos.message.Message.Message):
         except:
             pass
         try:
-            s += "  [temp=0x%x]\n" % (self.get_temp())
+            s += "  [tcts_temp=0x%x]\n" % (self.get_tcts_temp())
+        except:
+            pass
+        try:
+            s += "  [tcts_state=0x%x]\n" % (self.get_tcts_state())
         except:
             pass
         return s
@@ -570,57 +574,112 @@ class TestTctsMsg(tinyos.message.Message.Message):
         return 8
 
     #
-    # Accessor methods for field: temp
+    # Accessor methods for field: tcts_temp
     #   Field type: int
     #   Offset (bits): 168
     #   Size (bits): 16
     #
 
     #
-    # Return whether the field 'temp' is signed (False).
+    # Return whether the field 'tcts_temp' is signed (False).
     #
-    def isSigned_temp(self):
+    def isSigned_tcts_temp(self):
         return False
 
     #
-    # Return whether the field 'temp' is an array (False).
+    # Return whether the field 'tcts_temp' is an array (False).
     #
-    def isArray_temp(self):
+    def isArray_tcts_temp(self):
         return False
 
     #
-    # Return the offset (in bytes) of the field 'temp'
+    # Return the offset (in bytes) of the field 'tcts_temp'
     #
-    def offset_temp(self):
+    def offset_tcts_temp(self):
         return (168 / 8)
 
     #
-    # Return the offset (in bits) of the field 'temp'
+    # Return the offset (in bits) of the field 'tcts_temp'
     #
-    def offsetBits_temp(self):
+    def offsetBits_tcts_temp(self):
         return 168
 
     #
-    # Return the value (as a int) of the field 'temp'
+    # Return the value (as a int) of the field 'tcts_temp'
     #
-    def get_temp(self):
-        return self.getUIntElement(self.offsetBits_temp(), 16, 1)
+    def get_tcts_temp(self):
+        return self.getUIntElement(self.offsetBits_tcts_temp(), 16, 1)
 
     #
-    # Set the value of the field 'temp'
+    # Set the value of the field 'tcts_temp'
     #
-    def set_temp(self, value):
-        self.setUIntElement(self.offsetBits_temp(), 16, value, 1)
+    def set_tcts_temp(self, value):
+        self.setUIntElement(self.offsetBits_tcts_temp(), 16, value, 1)
 
     #
-    # Return the size, in bytes, of the field 'temp'
+    # Return the size, in bytes, of the field 'tcts_temp'
     #
-    def size_temp(self):
+    def size_tcts_temp(self):
         return (16 / 8)
 
     #
-    # Return the size, in bits, of the field 'temp'
+    # Return the size, in bits, of the field 'tcts_temp'
     #
-    def sizeBits_temp(self):
+    def sizeBits_tcts_temp(self):
         return 16
+
+    #
+    # Accessor methods for field: tcts_state
+    #   Field type: short
+    #   Offset (bits): 184
+    #   Size (bits): 8
+    #
+
+    #
+    # Return whether the field 'tcts_state' is signed (False).
+    #
+    def isSigned_tcts_state(self):
+        return False
+
+    #
+    # Return whether the field 'tcts_state' is an array (False).
+    #
+    def isArray_tcts_state(self):
+        return False
+
+    #
+    # Return the offset (in bytes) of the field 'tcts_state'
+    #
+    def offset_tcts_state(self):
+        return (184 / 8)
+
+    #
+    # Return the offset (in bits) of the field 'tcts_state'
+    #
+    def offsetBits_tcts_state(self):
+        return 184
+
+    #
+    # Return the value (as a short) of the field 'tcts_state'
+    #
+    def get_tcts_state(self):
+        return self.getUIntElement(self.offsetBits_tcts_state(), 8, 1)
+
+    #
+    # Set the value of the field 'tcts_state'
+    #
+    def set_tcts_state(self, value):
+        self.setUIntElement(self.offsetBits_tcts_state(), 8, value, 1)
+
+    #
+    # Return the size, in bytes, of the field 'tcts_state'
+    #
+    def size_tcts_state(self):
+        return (8 / 8)
+
+    #
+    # Return the size, in bits, of the field 'tcts_state'
+    #
+    def sizeBits_tcts_state(self):
+        return 8
 
