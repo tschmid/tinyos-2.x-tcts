@@ -33,7 +33,8 @@ generic module TctsP(typedef precision_tag)
         interface BlockWrite;
 
         interface SplitControl as RadioControl;
-        interface Receive;
+        interface Receive as ReceiveCmd;
+        interface Receive as ReceiveData;
         interface AMSend;
         interface Packet;
     }
@@ -55,11 +56,9 @@ implementation
 
     enum {
         BLOCK_ADDR = 0,
-        CONFIG_VERSION = 7,
-
         CALIBRATION = 1,
         COMPENSATION = 2,
-        DEFAULT_PERIOD = 30,
+        DEFAULT_PERIOD = 100,
         NUM_CALIB    = 3,              // how many calibration messages are needed?
         NUM_TEMP     = 2048,
         TEMP_BINS    = 0xFFFF/16384, 
@@ -78,10 +77,12 @@ implementation
     uint8_t calibCounter; // counts how many calibration messages we received
     uint16_t currentPeriod; // the current beacon interval in seconds
     bool locked;            // protects the msg buffer
+    bool offsetDone;        // indicates if the offset was calculated or not.
     message_t msg;
     uint32_t lastAlarm;
 
     uint16_t tempIndex; // current position in reading the temperature
+    int16_t offset;     // offset into the table
     norace uint16_t currentTemp;
 
     typedef struct config_t {
@@ -102,9 +103,11 @@ implementation
         currentPeriod = DEFAULT_PERIOD;
         state = CALIBRATION;
         storageState = STATE_INIT;
+        offsetDone = FALSE;
         calibCounter = 0;
         conf.version = 0;
         tempIndex = 0;
+        offset = 0;
         locked = FALSE;
         skew = 0.0;
         localAverage = 0;
@@ -114,10 +117,17 @@ implementation
 
     event void Boot.booted()
     {
+#ifdef NOREAD
+        uint16_t i;
+        call StdControl.start();
+        for(i=0; i<NUM_TEMP; i++)
+            conf.calTable[i] = INVALID_TEMP; 
+#else
         if (call BlockRead.read(BLOCK_ADDR, &conf, sizeof(conf)) != SUCCESS) {
             // Handle failure
             call Leds.led2On();
         }
+#endif
         atomic {
             lastAlarm = call CompensationAlarm.getNow();
             call CompensationAlarm.startAt(lastAlarm, COMPINTERVAL);
@@ -278,15 +288,60 @@ implementation
                     uint16_t i = val/TEMP_BINS;
                     atomic {
                         skew = call TSTimeSyncInfo.getSkew();
+                        calibCounter = 0;
 #ifndef NOCOMP
                         state = COMPENSATION;
 #endif
-                        conf.calTable[i] = skew;
+                        /*
+                        // if the calibration table is already filled, check
+                        // for offset
+                        if(conf.calTable[i] != INVALID_TEMP && !offsetDone)
+                        {
+                            // we have not been offset calibrated. Find the
+                            // offset
+                            uint16_t j = 0;
+                            uint16_t forwardj;
+                            uint16_t backwardj;
+
+                            // search forward first
+                            for(j = i; j<NUM_TEMP; j++)
+                            {
+                                if(((conf.calTable[j] - skew) < 0.05e-6) &&
+                                        ((conf.calTable[j] - skew) < -0.05e-6))
+                                {
+                                    forwardj = j-i;
+                                    break;
+                                }
+                            }
+
+                            // search backward
+                            for(j = i; j>=0; j--)
+                            {
+                                if(((conf.calTable[j] - skew) < 0.05e-6) &&
+                                        ((conf.calTable[j] - skew) < -0.05e-6))
+                                {
+                                    backwardj = i-j;
+                                    break;
+                                }
+                            }
+
+                            if(forwardj < backwardj)
+                                offset = forwardj;
+                            else
+                                offset = -backwardj;
+
+                            offsetDone = TRUE;
+                        } else {
+                        */
+                            conf.calTable[i] = skew;
+                            /*
+                        }
+                        */
                     }
                 }
                 break;
             case COMPENSATION:
-                if(conf.calTable[val/TEMP_BINS] == INVALID_TEMP)
+                if(conf.calTable[val/TEMP_BINS+offset] == INVALID_TEMP)
                 {
                     // we don't know the current skew, go back to calibration!
 
@@ -301,13 +356,13 @@ implementation
                     // first, update our estimate of global time using old
                     // skew
                     atomic {
-                        offsetAverageF = offsetAverageF + (skew + conf.calTable[val/TEMP_BINS]) / 2.0 * COMPINTERVAL;
+                        offsetAverageF = offsetAverageF + (conf.calTable[val/TEMP_BINS+offset]) * COMPINTERVAL;
                         offsetAverage = (int32_t)offsetAverageF;
 
                         localAverage += COMPINTERVAL;
 
                         // now, update the skew
-                        skew = conf.calTable[val/TEMP_BINS];
+                        skew = conf.calTable[val/TEMP_BINS+offset];
                     }
 
 
@@ -392,7 +447,7 @@ implementation
         call Leds.led0Toggle();
     }
 
-    event message_t* Receive.receive(message_t* msgPtr, void* payload, uint8_t len)
+    event message_t* ReceiveCmd.receive(message_t* msgPtr, void* payload, uint8_t len)
     {
         tcts_cmd_msg_t* m = (tcts_cmd_msg_t*)call Packet.getPayload(msgPtr, sizeof(tcts_cmd_msg_t));
         call Leds.led0Toggle();
@@ -443,6 +498,36 @@ implementation
         return msgPtr;
     }
 
+    event message_t* ReceiveData.receive(message_t* msgPtr, void* payload, uint8_t len)
+    {
+        tcts_msg_t* m = (tcts_msg_t*)call Packet.getPayload(msgPtr, sizeof(tcts_msg_t));
+        if(m->src != TOS_NODE_ID)
+        {
+            // this is not for us
+            return msgPtr;
+        }
+
+        switch(m->cmd)
+        {
+            case SET_SKEWS:
+                {
+                    uint16_t i;
+                    uint8_t j = 0;
+
+                    call Leds.led0Toggle();
+
+                    for(i=m->startIndex; i<m->startIndex + 10; i++)
+                    {
+                        conf.calTable[i%NUM_TEMP] = m->skews[j];
+                        j++;
+                    }
+
+                }
+        }
+        return msgPtr;
+    }
+
+
     event void AMSend.sendDone(message_t* ptr, error_t success) {
         if(success == SUCCESS)
         {
@@ -459,7 +544,16 @@ implementation
     }
     event void BlockRead.computeCrcDone(storage_addr_t addr, storage_len_t len, uint16_t crc, error_t result) {}
 
-    async command float     TimeSyncInfo.getSkew() { return skew; }
+    async command float     TimeSyncInfo.getSkew() { 
+        switch(state)
+        {
+            case CALIBRATION:
+                return call TSTimeSyncInfo.getSkew();
+            case COMPENSATION:
+                return skew;
+        }
+    }
+
     async command uint32_t  TimeSyncInfo.getOffset() { return offsetAverage; }
     async command uint32_t  TimeSyncInfo.getSyncPoint() { return localAverage; }
     async command uint16_t  TimeSyncInfo.getRootID() { return call TSTimeSyncInfo.getRootID(); }
@@ -468,6 +562,6 @@ implementation
     async command uint8_t   TimeSyncInfo.getHeartBeats() { return call TSTimeSyncInfo.getHeartBeats(); }
 
     async command uint16_t TctsInfo.getTemp() { return currentTemp; }
-    async command uint8_t TctsInfo.getState() { return state; }
+    async command uint8_t TctsInfo.getState() { return offset; }
 
 }

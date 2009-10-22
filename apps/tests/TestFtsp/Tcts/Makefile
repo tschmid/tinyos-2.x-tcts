@@ -17,7 +17,7 @@ TctsCmdMsg.py: $(TOSDIR)/lib/tcts/TctsMsg.h
 
 COMPONENT=TestTctsAppC
 
-PFLAGS += -DTIMESYNC_RATE=3
+PFLAGS += -DTIMESYNC_RATE=100
 #PFLAGS += -DTIMESYNC_DEBUG
 
 CFLAGS += -DTOSH_DATA_LENGTH=90
@@ -25,7 +25,9 @@ CFLAGS += -DTOSH_DATA_LENGTH=90
 PFLAGS += -I$(TOSDIR)/lib/ftsp -I$(TOSDIR)/lib/tcts -I$(TOSDIR)/../apps/RadioCountToLeds
 PFLAGS += -I$(TOSDIR)/lib/printf
 
-#CFLAGS += -DDOCALIB  # uncomment to enable automatic calibration
-CFLAGS += -DNOCOMP   # uncomment to disable automatic compensation
+CFLAGS += -DDOCALIB  # uncomment to enable automatic calibration
+#CFLAGS += -DNOCOMP   # uncomment to disable automatic compensation
+#CFLAGS += -DNOREAD   # uncomment to disable the reading of the conf table from flash
+CFLAGS += -DCONFIG_VERSION=8
 
 include $(MAKERULES)

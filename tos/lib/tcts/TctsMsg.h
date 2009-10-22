@@ -24,6 +24,7 @@ enum
 {
     GET_SKEWS = 1,
     WRITE_CONFIG = 2,
+    SET_SKEWS = 3,
 
     SKEW_RSP = 0x81,
     WRITE_RSP = 0x82,

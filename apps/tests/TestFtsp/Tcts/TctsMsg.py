@@ -45,7 +45,7 @@ class TctsMsg(tinyos.message.Message.Message):
         try:
             s += "  [skews=";
             for i in range(0, 10):
-                s += "0x%x " % (self.getElement_skews(i) & 0xff)
+                s += "%e " % (self.getElement_skews(i))
             s += "]\n";
         except:
             pass

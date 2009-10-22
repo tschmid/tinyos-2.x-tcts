@@ -69,7 +69,8 @@ implementation
 
     components ActiveMessageC;
     TctsP.RadioControl -> ActiveMessageC;
-    TctsP.Receive -> ActiveMessageC.Receive[AM_TCTS_CMD_MSG];
+    TctsP.ReceiveCmd -> ActiveMessageC.Receive[AM_TCTS_CMD_MSG];
+    TctsP.ReceiveData -> ActiveMessageC.Receive[AM_TCTS_MSG];
     TctsP.AMSend -> ActiveMessageC.AMSend[AM_TCTS_MSG];
     TctsP.Packet -> ActiveMessageC;
 }

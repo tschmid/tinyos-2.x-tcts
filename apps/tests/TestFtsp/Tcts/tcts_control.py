@@ -127,7 +127,8 @@ class Tcts:
         if c == ord('s'):
             # send a skew table to a node
             self.state=SET_SKEWS
-            self.scr.addstr(8, 0, "Set Skews")
+            self.T = int(sys.argv[2])
+            self.scr.addstr(8, 0, "Set Skews start at index=%d"%(self.T))
 
         if c - ord('0') in range(1, 10):
             if self.state == SET_SKEWS:
@@ -135,24 +136,23 @@ class Tcts:
 
                 i = 0
                 smsg = TctsMsg.TctsMsg()
+                smsg.set_cmd(self.state)
+                smsg.set_src(c-ord('0'))
+                smsg.set_startIndex(self.T)
                 sk = []
-                for T in range(200, 2000):
-                    if i%10 == 0:
-                        if i != 0:
-                            smsg.set_skews(sk)
-                            self.mif.sendMsg(self.tos_source, c-ord('0'),
-                                    smsg.get_amType(), 0, smsg)
-                            time.sleep(0.1)
-                            smsg = TctsMsg.TctsMsg()
-                        smsg.set_cmd(self.state)
-                        smsg.set_src(c-ord('0'))
-                        smsg.set_startIndex(T)
-                        sk = []
-
+                for T in range(self.T, self.T+10):
                     Tf = float(T)
                     sk.append(a1*Tf*Tf+a2*Tf+a3)
-                    i += 1
-                self.scr.addstr(9, 0, "DONE")
+                smsg.set_skews(sk)
+                self.mif.sendMsg(self.tos_source, c-ord('0'),
+                        smsg.get_amType(), 0, smsg)
+                self.scr.addstr(9, 0, "sent index=%d"%(self.T,))
+                f = file('msg.log', 'a+')
+                f.write(str(smsg) + "\n")
+                f.close()
+                self.T += 10
+                if self.T > 2000:
+                    self.T = 200
             else:
                 cmsg = TctsCmdMsg.TctsCmdMsg()
                 cmsg.set_cmd(self.state)

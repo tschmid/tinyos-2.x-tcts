@@ -29,7 +29,7 @@ class TctsDataLogger:
         self.entryStrLength = 0
 
         print "\n#time src_addr ftsp_seq local_rx_timestamp global_rx_timestamp \
-skew table_entries rootid"
+skew temp table_entries rootid"
 
     def receive(self, src, msg):
         if msg.get_amType() == TestTctsMsg.AM_TYPE:
@@ -53,26 +53,28 @@ skew table_entries rootid"
                             if k != self.filteraddr:
                                 continue
                         if k not in self.d.keys():
-                            ps = "%3d %3d %10d %10d %e %1d %3d %10s"%(k, 0, 0,
-                                    0, 0, 0, 0, "None")
+                            ps = "%3d %3d %10d %10d %e %4d %1d %3d %10s"%(k, 0, 0,
+                                    0, 0, 0, 0, 0, "None")
                             bad = True
                         elif self.d[k].get_is_synced() == 1:
                             # node is not synced
-                            ps = "%3d %3d %10d %10d %e %1d %3d %10s"%(k,
+                            ps = "%3d %3d %10d %10d %e %4d %1d %3d %10s"%(k,
                                     self.d[k].get_ftsp_seq(),
                                     -1,
                                     -1,
                                     self.d[k].get_skew(),
+                                    -1,
                                     self.d[k].get_ftsp_table_entries(),
                                     self.d[k].get_ftsp_root_addr(),
                                     "None")
                             bad = True
                         else:
-                            ps = "%3d %3d %10d %10d %e %1d %3d "%(k,
+                            ps = "%3d %3d %10d %10d %e %4d %1d %3d "%(k,
                                     self.d[k].get_ftsp_seq(),
                                     self.d[k].get_local_rx_timestamp(),
                                     self.d[k].get_global_rx_timestamp(),
                                     self.d[k].get_skew(),
+                                    self.d[k].get_tcts_temp(),
                                     self.d[k].get_ftsp_table_entries(),
                                     self.d[k].get_ftsp_root_addr(),
                                     )
