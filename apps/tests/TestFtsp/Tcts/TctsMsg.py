@@ -283,7 +283,7 @@ class TctsMsg(tinyos.message.Message.Message):
     # Set an element of the array 'skews'
     #
     def setElement_skews(self, index1, value):
-        self.setSIntElement(self.offsetBits_skews(index1), 32, value, 1)
+        self.setFloatElement(self.offsetBits_skews(index1), 32, value, 0)
 
     #
     # Return the total size, in bytes, of the array 'skews'

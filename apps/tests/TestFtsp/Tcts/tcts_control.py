@@ -24,11 +24,24 @@ NUM_TEMP = 2048
 # hub commands
 GET_SKEWS        = 0x01
 WRITE_CONFIG     = 0x02
+SET_SKEWS        = 0x03
 
 # cmd responses
 SKEW_RSP         = 0x81
 WRITE_RSP        = 0x82
 WRITE_FAILED_RSP = 0x83
+
+c1 = 2.41134e-09
+c2 = -4.61874e-06
+c3 = 0.0021887
+
+b1 = 2.48805e-09
+b2 = -4.89248e-06
+b3 = 0.00237733
+
+a1 = 2.49163e-09
+a2 = -4.7777e-06
+a3 = 0.00225503
 
 class Tcts:
 
@@ -111,11 +124,40 @@ class Tcts:
             self.state=GET_SKEWS
             self.scr.addstr(8, 0, "Get Mode")
 
+        if c == ord('s'):
+            # send a skew table to a node
+            self.state=SET_SKEWS
+            self.scr.addstr(8, 0, "Set Skews")
+
         if c - ord('0') in range(1, 10):
-            cmsg = TctsCmdMsg.TctsCmdMsg()
-            cmsg.set_cmd(self.state)
-            self.mif.sendMsg(self.tos_source, c-ord('0'), cmsg.get_amType(), 0,
-                    cmsg)
+            if self.state == SET_SKEWS:
+                self.scr.addstr(9, 0, "BUSY")
+
+                i = 0
+                smsg = TctsMsg.TctsMsg()
+                sk = []
+                for T in range(200, 2000):
+                    if i%10 == 0:
+                        if i != 0:
+                            smsg.set_skews(sk)
+                            self.mif.sendMsg(self.tos_source, c-ord('0'),
+                                    smsg.get_amType(), 0, smsg)
+                            time.sleep(0.1)
+                            smsg = TctsMsg.TctsMsg()
+                        smsg.set_cmd(self.state)
+                        smsg.set_src(c-ord('0'))
+                        smsg.set_startIndex(T)
+                        sk = []
+
+                    Tf = float(T)
+                    sk.append(a1*Tf*Tf+a2*Tf+a3)
+                    i += 1
+                self.scr.addstr(9, 0, "DONE")
+            else:
+                cmsg = TctsCmdMsg.TctsCmdMsg()
+                cmsg.set_cmd(self.state)
+                self.mif.sendMsg(self.tos_source, c-ord('0'), cmsg.get_amType(), 0,
+                        cmsg)
 
     def close(self):
         # close up everything
