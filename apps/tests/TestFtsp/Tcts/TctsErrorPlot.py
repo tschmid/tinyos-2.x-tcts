@@ -99,8 +99,8 @@ class TctsDataLogger(wx.Frame):
         self.plot = {}
         self.heardNodes = []
         self.entryStrLength = 0
-        self._y_lower = {};
-        self._y_upper = {};
+        self._y_lower = {}
+        self._y_upper = {}
 
         ## mild difference between wxPython26 and wxPython28
         #if wx.VERSION[1] < 7:
@@ -236,8 +236,7 @@ class TctsDataLogger(wx.Frame):
                             for j in (ERRORPLOT, TEMPPLOT, SKEWPLOT):
                                 plots[j][k] = self.plot[k][j]
 
-                    for j in (ERRORPLOT, TEMPPLOT, SKEWPLOT):
-                        event = ResultEvent([plots,])
+                    event = ResultEvent([plots,])
                     wx.PostEvent(self, event)
                     self._rcvLock.release()
 

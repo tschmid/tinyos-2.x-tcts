@@ -53,16 +53,13 @@ implementation
 
 #define COMPINTERVAL 163840L        // update every 5 seconds
 
-#define DOCALIB  // uncomment to enable automatic calibration
-#define NOCOMP   // don't do any compensation
-
     enum {
         BLOCK_ADDR = 0,
         CONFIG_VERSION = 7,
 
         CALIBRATION = 1,
         COMPENSATION = 2,
-        DEFAULT_PERIOD = 100,
+        DEFAULT_PERIOD = 30,
         NUM_CALIB    = 3,              // how many calibration messages are needed?
         NUM_TEMP     = 2048,
         TEMP_BINS    = 0xFFFF/16384, 

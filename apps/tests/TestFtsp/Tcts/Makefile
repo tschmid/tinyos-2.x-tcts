@@ -25,4 +25,7 @@ CFLAGS += -DTOSH_DATA_LENGTH=90
 PFLAGS += -I$(TOSDIR)/lib/ftsp -I$(TOSDIR)/lib/tcts -I$(TOSDIR)/../apps/RadioCountToLeds
 PFLAGS += -I$(TOSDIR)/lib/printf
 
+#CFLAGS += -DDOCALIB  # uncomment to enable automatic calibration
+CFLAGS += -DNOCOMP   # uncomment to disable automatic compensation
+
 include $(MAKERULES)

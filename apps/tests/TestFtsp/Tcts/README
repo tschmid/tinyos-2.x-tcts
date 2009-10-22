@@ -1,0 +1,20 @@
+Demo Setup:
+- we need 4 nodes:
+  - 2 nodes need to be programmed with NOCOMP undefined, 2 with defined. The
+    2 defined ones will run regular FTSP.
+  - node id's should be 6, 7, 8, 9
+  - program 9 with NOCOMP
+
+- node 1 is the TCXO root node
+- node 4000 is the basestation
+
+- conect serial forwarder to basestation
+- run TctsPlotError.py sf@localhost:9002. This should start the wxPython
+  plotting window showing current error, temperature index, and frequency
+  error.
+
+
+In the default configuration:
+- TS beacons every 100 seconds
+- Compensation every 5 second
+
