@@ -52,7 +52,7 @@ generic module TctsP(typedef precision_tag)
 implementation
 {
 
-#define COMPINTERVAL 163840L        // update every 5 seconds
+#define COMPINTERVAL 162840L        // update every 1 seconds
 
     enum {
         BLOCK_ADDR = 0,
@@ -60,6 +60,7 @@ implementation
         COMPENSATION = 2,
         DEFAULT_PERIOD = 100,
         NUM_CALIB    = 3,              // how many calibration messages are needed?
+        //NUM_CALIB    = 1,              // how many calibration messages are needed?
         NUM_TEMP     = 2048,
         TEMP_BINS    = 0xFFFF/16384, 
     };
@@ -94,9 +95,10 @@ implementation
 
     // time sync globals
     float skew;
+    float smallOffsetAverageF;
     uint32_t localAverage;
     int32_t offsetAverage;
-    float offsetAverageF;
+    uint8_t s;
 
     command error_t Init.init()
     {
@@ -112,6 +114,7 @@ implementation
         skew = 0.0;
         localAverage = 0;
         offsetAverage = 0;
+        smallOffsetAverageF = 0.0;
         return call CompensationAlarmInit.init();
     }
 
@@ -258,7 +261,7 @@ implementation
         atomic {
             localAverage = call TSTimeSyncInfo.getSyncPoint();
             offsetAverage = call TSTimeSyncInfo.getOffset();
-            offsetAverageF = offsetAverage;
+            smallOffsetAverageF = 0.0;
         }
 
         switch(state)
@@ -271,7 +274,8 @@ implementation
 
             case COMPENSATION:
                 call Leds.led2Toggle();
-                call Temperature.read();
+                // if we compensate, don't do temperature as well.
+                //call Temperature.read();
                 break;
         }
     }
@@ -341,7 +345,7 @@ implementation
                 }
                 break;
             case COMPENSATION:
-                if(conf.calTable[val/TEMP_BINS+offset] == INVALID_TEMP)
+                if(0 && conf.calTable[val/TEMP_BINS+offset] == INVALID_TEMP)
                 {
                     // we don't know the current skew, go back to calibration!
 
@@ -356,10 +360,25 @@ implementation
                     // first, update our estimate of global time using old
                     // skew
                     atomic {
-                        offsetAverageF = offsetAverageF + (conf.calTable[val/TEMP_BINS+offset]) * COMPINTERVAL;
-                        offsetAverage = (int32_t)offsetAverageF;
+                        uint32_t localTime = lastAlarm;
+                        call Leds.led2Toggle();
+                        //offsetAverageF = offsetAverageF + (skew + conf.calTable[val/TEMP_BINS+offset])/2.0 * COMPINTERVAL;
+                        //offsetAverageF += ((skew + conf.calTable[val/TEMP_BINS])/2.0 * (float)(localTime - localAverage));
+                        smallOffsetAverageF += (skew + conf.calTable[val/TEMP_BINS])/2.0 * (float)(localTime - localAverage);
+                        if(smallOffsetAverageF < 0)
+                        {
+                            offsetAverage = offsetAverage + (int32_t)ceilf(smallOffsetAverageF-0.5);
+                            smallOffsetAverageF = smallOffsetAverageF - ceilf(smallOffsetAverageF-0.5);
+                        }
+                        else
+                        {
+                            offsetAverage = offsetAverage + (int32_t)floorf(smallOffsetAverageF+0.5);
+                            smallOffsetAverageF = smallOffsetAverageF - floorf(smallOffsetAverageF+0.5);
+                        }
 
-                        localAverage += COMPINTERVAL;
+                        //offsetAverage += skew * COMPINTERVAL;
+
+                        localAverage = localTime;
 
                         // now, update the skew
                         skew = conf.calTable[val/TEMP_BINS+offset];
@@ -562,6 +581,6 @@ implementation
     async command uint8_t   TimeSyncInfo.getHeartBeats() { return call TSTimeSyncInfo.getHeartBeats(); }
 
     async command uint16_t TctsInfo.getTemp() { return currentTemp; }
-    async command uint8_t TctsInfo.getState() { return offset; }
+    async command uint8_t TctsInfo.getState() { return state; }
 
 }

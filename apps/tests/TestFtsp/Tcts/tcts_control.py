@@ -142,7 +142,15 @@ class Tcts:
                 sk = []
                 for T in range(self.T, self.T+10):
                     Tf = float(T)
-                    sk.append(a1*Tf*Tf+a2*Tf+a3)
+                    if c-ord('0') == 6:
+                        sk.append(a1*Tf*Tf+a2*Tf+a3)
+                    elif c-ord('0') == 7:
+                        sk.append(b1*Tf*Tf+b2*Tf+b3)
+                    elif c-ord('0') == 8:
+                        sk.append(c1*Tf*Tf+c2*Tf+c3)
+                    else:
+                        sk.append(INVALID_TEMP)
+
                 smsg.set_skews(sk)
                 self.mif.sendMsg(self.tos_source, c-ord('0'),
                         smsg.get_amType(), 0, smsg)

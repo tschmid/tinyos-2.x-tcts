@@ -69,7 +69,7 @@ skew temp table_entries rootid"
                                     "None")
                             bad = True
                         else:
-                            ps = "%3d %3d %10d %10d %e %4d %1d %3d "%(k,
+                            ps = "%3d %3d %10d %10d %f %4d %1d %3d "%(k,
                                     self.d[k].get_ftsp_seq(),
                                     self.d[k].get_local_rx_timestamp(),
                                     self.d[k].get_global_rx_timestamp(),

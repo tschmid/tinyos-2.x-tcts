@@ -33,7 +33,7 @@ COLORS = {
 YMARGIN = {
         ERRORPLOT: 1/32.768,
         TEMPPLOT : 1,
-        SKEWPLOT : 1e-6,
+        SKEWPLOT : 1,
         }
 
 class ResultEvent(wx.PyEvent):
@@ -197,7 +197,7 @@ class TctsDataLogger(wx.Frame):
                                 self.plot[k][TEMPPLOT].append((time.time()-self.starttime,
                                     self.d[k].get_tcts_temp()))
                                 self.plot[k][SKEWPLOT].append((time.time()-self.starttime,
-                                    self.d[k].get_skew()))
+                                    self.d[k].get_skew()*1e6))
 
                                 for j in (ERRORPLOT, TEMPPLOT, SKEWPLOT):
                                         # clip data to adjust to the window size
@@ -234,7 +234,8 @@ class TctsDataLogger(wx.Frame):
                         # add all the data to the graphs
                         if k != ROOTID:
                             for j in (ERRORPLOT, TEMPPLOT, SKEWPLOT):
-                                plots[j][k] = self.plot[k][j]
+                                if k in self.plot.keys():
+                                    plots[j][k] = self.plot[k][j]
 
                     event = ResultEvent([plots,])
                     wx.PostEvent(self, event)
@@ -309,7 +310,7 @@ def main():
     f = TctsDataLogger(None, -1, "Data", sys.argv[1])
     sensorids = [ERRORPLOT, TEMPPLOT, SKEWPLOT]
     f.CreateGraphs(sensorids)
-    f.SetWindowSize(1024)
+    f.SetWindowSize(256)
     f.SetSampleRate(1)
     f.SetYAxisRange(-20, 20)
     f.Show(True)
