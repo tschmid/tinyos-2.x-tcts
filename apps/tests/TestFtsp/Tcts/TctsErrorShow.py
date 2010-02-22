@@ -11,7 +11,8 @@ from tinyos.message.SerialPacket import *
 from tinyos.packet.Serial import Serial
 
 ROOTID = 1
-TEMPBINS = 0xFFFF/16384
+#TEMPBINS = 0xFFFF/16384
+TEMPBINS = 1
 
 class TctsDataLogger:
     def __init__(self, motestring):
